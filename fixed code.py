@@ -40,10 +40,17 @@ cursor.execute("CREATE TABLE name_dates "
 
 base_url = 'https://www.vardai.org/tema/lietuviski-vardai/page/'
 page_numb = 0
+
+
 # Main function start
 while True:
     page_numb += 1
     crr_page = requests.get(base_url + str(page_numb)).text
+
+    # failed to load page - it's critical, exit
+    if crr_page.status_code != 200:
+        break
+
     soup = BeautifulSoup(crr_page, 'lxml')
 
     # Track page
@@ -128,6 +135,7 @@ while True:
         except Exception as e:
             pass
 
+    # WHEN to check exit condition??
     # Checks if it should end the program
     if page_numb == int(last_page):
         break
