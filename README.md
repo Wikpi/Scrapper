@@ -1,7 +1,7 @@
-Download Python here:
+Download Python3 here:
 https://www.python.org/downloads/
 
-Download MySQL here:
+Download MySQL 8.0 here:
 https://dev.mysql.com/downloads/installer/
 
 You will need to go to command prompt or terminal and install a few necessary modules.
