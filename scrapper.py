@@ -2,6 +2,8 @@ from bs4 import BeautifulSoup
 import requests, lxml
 import mysql.connector
 
+# this is main change
+
 db = mysql.connector.connect(
     host="localhost",
     # Your user name
