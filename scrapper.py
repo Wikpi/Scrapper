@@ -17,10 +17,12 @@ cursor = db.cursor()
 
 # // Delete tables //
 try:
-    drop_dates = "DROP TABLE name_dates"
-    drop_names = "DROP TABLE names"
-    cursor.execute(drop_names)
-    cursor.execute(drop_dates)
+    cursor.execute("DROP TABLE names")
+except Exception:
+    pass
+
+try:
+    cursor.execute("DROP TABLE name_dates")
 except Exception:
     pass
 
