@@ -26,14 +26,19 @@ try:
 except Exception:
     pass
 
+try:
+    cursor.execute("DROP TABLE duplicates")
+except Exception:
+    pass
+
 # // Create new tables //
 cursor.execute("CREATE TABLE names"
                "(id int PRIMARY KEY AUTO_INCREMENT, "
                "name VARCHAR(50) CHARACTER SET utf8 COLLATE utf8_lithuanian_ci, "
-               "gender VARCHAR(100) CHARACTER SET utf8 COLLATE utf8_lithuanian_ci,"
-               "explanation VARCHAR(300) CHARACTER SET utf8 COLLATE utf8_lithuanian_ci, "
-               "origin VARCHAR(150) CHARACTER SET utf8 COLLATE utf8_lithuanian_ci,"
-               "UNIQUE (name))")
+               "gender VARCHAR(100) CHARACTER SET utf8 COLLATE utf8_lithuanian_ci, "
+               "short_explanation varchar(250) CHARACTER SET utf8 COLLATE utf8_lithuanian_ci, "
+               "explanation VARCHAR(500) CHARACTER SET utf8 COLLATE utf8_lithuanian_ci, "
+               "origin VARCHAR(150) CHARACTER SET utf8 COLLATE utf8_lithuanian_ci)")
 cursor.execute("CREATE TABLE name_dates "
                "(id int PRIMARY KEY AUTO_INCREMENT, "
                "name VARCHAR(50) CHARACTER SET utf8 COLLATE utf8_lithuanian_ci, "
@@ -61,11 +66,15 @@ while True:
         try:
             last_page = soup.find('a', {'class': 'last'}).text
             last_page = last_page.split(' ')[0]
+            print(last_page)
         except Exception:
             err_count += 1
             pass
+
     # print('Error count: ' + str(err_count))
     for find_item in soup.findAll("div", {"class": "posttop"}):
+        not_found = 0
+
         # Find name
         try:
             name = find_item.h2.text
@@ -98,7 +107,12 @@ while True:
         day = '0'
         try:
             find_date = soup_info.find('span', id='vardadienis')
+
             find_date = find_date.b.text
+            if find_date == '':
+                not_found += 1
+            else:
+                pass
 
             if ' - ' in find_date:
                 find_date = find_date.replace('-', ' ')
@@ -124,30 +138,52 @@ while True:
 
                 try:
                     cursor.execute("INSERT INTO name_dates (name, day_month, day_day) VALUES (%s, %s, %s)", (name, month, day))
-                    db.commit()
                 except Exception as bb:
                     print(bb)
-                    err_count += 1
                     print("Error putting into table")
                     pass
 
         except Exception as bug:
             err_count += 1
             print(bug)
-            print('Error getting month/day')
             pass
 
         # Find gender
         gender = ''
         try:
-            find_gender = soup_info.find('span', id='lytis').text
+            find_gender = soup_info.find('span', id='lytis')
+            find_b = find_gender.b.text
+
+            if find_b == '':
+                not_found += 1
+            else:
+                pass
+
+            find_gender = find_gender.text
+
             gender = find_gender.split(':')[1]
-        except Exception:
+        except Exception as tt:
             err_count += 1
+            print(tt)
+            print("ERROR WITH GENDER")
+            pass
+
+        # Find short explanation
+        short_explanation = ''
+        try:
+            find_short = soup_info.find('span', id='reiksme').text
+
+            if find_short.split(':')[1] == ' .':
+                not_found += 1
+
+            short_explanation = find_short
+        except Exception as ff:
+            err_count += 1
+            print(ff)
             pass
 
         # Find the explanation and the origin
-        explanation = ''
+        explanation = 'Vardo reikšmė: .'
         origin = ''
         try:
             find_info = soup_info.find('span', id='plati').text
@@ -156,21 +192,48 @@ while True:
                 if len(v) > 30 and len(v) < 300:
                     if 'Panašūs' in v:
                         continue
-                    explanation = v
-            find_origin = soup_info.find('span', id='kilme').text
-            origin = find_origin.split(':')[1]
+                    else:
+                        pass
+
+                    if "Vardo reikšmė:" not in v:
+                        if v[0] != ' ':
+                            v = ' ' + v
+                        explanation = "Vardo reikšmė:" + v
+                    else:
+                        explanation = v
         except Exception:
             err_count += 1
             pass
 
-        # Put everything into tables
+        # Find the origin
         try:
-            cursor.execute("INSERT IGNORE INTO names (name, gender, explanation, origin) VALUES (%s, %s, %s, %s)", (name, gender, explanation, origin))
+            find_origin = soup_info.find('span', id='kilme')
+            find_b = find_origin.b.text
+
+            if find_b == '':
+                not_found += 1
+            else:
+                pass
+            find_origin = find_origin.text
+
+            origin = find_origin.split(':')[1]
+        except Exception as gg:
+            err_count += 1
+            print(gg)
+            print("ERROR WITH ORIGIN")
+            pass
+
+        if not_found >= 4:
+            continue
+
+        # Put name into table
+        try:
+            cursor.execute("INSERT INTO names (name, gender, short_explanation, explanation, origin)"
+                           "VALUES (%s, %s, %s, %s, %s)", (name, gender, short_explanation, explanation, origin))
             db.commit()
         except Exception as e:
             print(e)
             err_count += 1
-            pass
 
     # Checks if it should end the program
     if page_numb == int(last_page):
